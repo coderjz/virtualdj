@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class ColorImageDisplay : MonoBehaviour
@@ -26,6 +28,16 @@ public class ColorImageDisplay : MonoBehaviour
     private Image _outerCircleImage;
 
     private float _joystickMaxMagnitude;
+
+    private enum ColorComponent
+    {
+        Hue,
+        Saturation,
+        Brightness
+    }
+
+    private ColorComponent _horizontalColorComponent = ColorComponent.Hue;
+    private ColorComponent _verticalColorComponent = ColorComponent.Saturation;
     
     void Start()
     {
@@ -51,6 +63,45 @@ public class ColorImageDisplay : MonoBehaviour
         return x < 0 ? ((x % m) + m) % m : x % m; 
     }
 
+    void SetSpeeds(Vector2 direction)
+    {
+        Debug.Log($"{_horizontalColorComponent}, {_verticalColorComponent}");
+        float hSpeed = 0;
+        float sSpeed = 0;
+        float vSpeed = 0;
+        switch(_horizontalColorComponent)
+        {
+            case ColorComponent.Hue:
+                hSpeed = direction.x;
+                break;
+            case ColorComponent.Saturation:
+                sSpeed = direction.x;
+                break;
+            case ColorComponent.Brightness:
+                vSpeed = direction.x;
+                break;
+            default:
+                throw new NotImplementedException($"Unexpected color component value [_horizontalColorComponent={_horizontalColorComponent}");
+        }
+        // If both horizontal and vertical are set to the same color component the vertical will override the horizontal. We won't handle this case more elegantly for now.
+        switch(_verticalColorComponent)
+        {
+            case ColorComponent.Hue:
+                hSpeed = direction.y;
+                break;
+            case ColorComponent.Saturation:
+                sSpeed = direction.y;
+                break;
+            case ColorComponent.Brightness:
+                vSpeed = direction.y;
+                break;
+            default:
+                throw new NotImplementedException($"Unexpected color component value [_verticalColorComponent={_verticalColorComponent}");
+        }
+
+        SetSpeeds(hSpeed, sSpeed, vSpeed);
+    }
+
     void SetSpeeds(float hSpeed, float sSpeed, float vSpeed)
     {
         this._hSpeed = hSpeed;
@@ -62,8 +113,9 @@ public class ColorImageDisplay : MonoBehaviour
     {
         if(Input.GetMouseButtonDown(0))
         {
-            // Are we clicking in the bottom 20%?
-            if(Input.mousePosition.y < Screen.height * 0.1f)
+            // IMPORTANT: All canvas objects that are not on the config panel must have the Image --> Raycast Target turned OFF so that they don't return true of IsPointerOverGameObject()
+            if(EventSystem.current.IsPointerOverGameObject()  // Panel is shown, clicking on panel
+                || Input.mousePosition.y < Screen.height * 0.1f) // Panel not yet shown, clicking on lower 10% of background
             {
                 _configPanel.SetActive(true);
             }
@@ -85,7 +137,7 @@ public class ColorImageDisplay : MonoBehaviour
             Vector2 direction = Vector2.ClampMagnitude(offset, _joystickMaxMagnitude);
 
             _innerCircle.position = new Vector2(_startDrag.x + direction.x, _startDrag.y + direction.y);
-            SetSpeeds(direction.x, direction.y, 0);
+            SetSpeeds(direction);
         }
         else
         {
@@ -124,4 +176,25 @@ public class ColorImageDisplay : MonoBehaviour
         _backgroundImage.color = Color.HSVToRGB(h, s, v);
     }
 
+    public void HorizontalAxisValueChanged(int value)
+    {
+        _horizontalColorComponent = GetAxisColorComponent(value);
+    }
+
+    public void VerticalAxisValueChanged(int value)
+    {
+        _verticalColorComponent = GetAxisColorComponent(value);
+    }
+
+    private ColorComponent GetAxisColorComponent(int value)
+    {
+        Debug.Assert(value >= 0 && value <= 2, $"Invalid value, should be between 0 and 2 inclusive [value={value}]");
+        return value switch
+        {
+            0 => ColorComponent.Hue,
+            1 => ColorComponent.Saturation,
+            2 => ColorComponent.Brightness,
+            _ => throw new NotImplementedException(),
+        };
+    }
 }
