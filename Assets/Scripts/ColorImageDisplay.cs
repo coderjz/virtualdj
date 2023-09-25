@@ -4,9 +4,14 @@ using UnityEngine.UI;
 public class ColorImageDisplay : MonoBehaviour
 {
     [SerializeField]
-    private GameObject _gameObjectWithImage;
+    private GameObject _background;
+    [SerializeField]
+    private GameObject _configPanel;
+    [SerializeField]
+    private Transform _innerCircle;
+    [SerializeField]
+    private Transform _outerCircle;
 
-    private Image _image;
 
     // Speeds to change the HSV color
     private float _hSpeed = 0.5f;
@@ -16,20 +21,23 @@ public class ColorImageDisplay : MonoBehaviour
     private Vector2 _startDrag;
     private Vector2 _currentDrag;
 
-    [SerializeField]
-    private Transform _innerCircle;
-    [SerializeField]
-    private Transform _outerCircle;
+    private Image _backgroundImage;
+    private Image _innerCircleImage;
+    private Image _outerCircleImage;
 
     private float _joystickMaxMagnitude;
     
-    // Start is called before the first frame update
     void Start()
     {
-        _image = _gameObjectWithImage.GetComponent<Image>();
-        Debug.Assert(_image != null, "Game object must have an image [_image=null]");
+        _backgroundImage = _background.GetComponent<Image>();
+        _innerCircleImage = _innerCircle.GetComponent<Image>();
+        _outerCircleImage = _outerCircle.GetComponent<Image>();
 
-        _image.color = Color.HSVToRGB(0.5f, 1.0f, 0.7f);
+        _backgroundImage.color = Color.HSVToRGB(0.5f, 1.0f, 0.7f);
+
+        Debug.Assert(_backgroundImage != null, "Game object must have an image [_backgroundImage=null]");
+        Debug.Assert(_innerCircleImage != null, "Inner circle must have an image [_innerCircleImage=null]");
+        Debug.Assert(_outerCircleImage != null, "Outer circle must have an image [_outerCircleImage=null]");
     }
 
     private void OnRectTransformDimensionsChange()
@@ -50,32 +58,40 @@ public class ColorImageDisplay : MonoBehaviour
         this._vSpeed = vSpeed;
     }
 
-    // Update is called once per frame
     void Update()
     {
         if(Input.GetMouseButtonDown(0))
         {
-            _startDrag = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Camera.main.transform.position.z));
-            _innerCircle.position = _startDrag;
-            _outerCircle.position = _startDrag;
-            _innerCircle.GetComponent<Image>().enabled = true;
-            _outerCircle.GetComponent<Image>().enabled = true;
+            // Are we clicking in the bottom 20%?
+            if(Input.mousePosition.y < Screen.height * 0.1f)
+            {
+                _configPanel.SetActive(true);
+            }
+            else
+            {
+                _startDrag = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Camera.main.transform.position.z));
+                _innerCircle.position = _startDrag;
+                _outerCircle.position = _startDrag;
+                _innerCircleImage.enabled = true;
+                _outerCircleImage.enabled = true;
+                _configPanel.SetActive(false);
+            }
         }
 
-        if(Input.GetMouseButton(0))
+        if(Input.GetMouseButton(0) && _innerCircleImage.enabled)
         {
             _currentDrag = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Camera.main.transform.position.z));
             Vector2 offset = _currentDrag - _startDrag;
             Vector2 direction = Vector2.ClampMagnitude(offset, _joystickMaxMagnitude);
 
-            _innerCircle.transform.position = new Vector2(_startDrag.x + direction.x, _startDrag.y + direction.y);
+            _innerCircle.position = new Vector2(_startDrag.x + direction.x, _startDrag.y + direction.y);
             SetSpeeds(direction.x, direction.y, 0);
         }
         else
         {
             SetSpeeds(0, 0, 0);
-            _innerCircle.GetComponent<Image>().enabled = false;
-            _outerCircle.GetComponent<Image>().enabled = false;
+            _innerCircleImage.enabled = false;
+            _outerCircleImage.enabled = false;
         }
 
         UpdateColor();
@@ -94,7 +110,7 @@ public class ColorImageDisplay : MonoBehaviour
 
     private void UpdateColor()
     {
-        Color.RGBToHSV(_image.color, out float h, out float s, out float v);
+        Color.RGBToHSV(_backgroundImage.color, out float h, out float s, out float v);
         // Hue should warp from 1 back to 0 and from 0 back to 1
         h += _hSpeed * Time.deltaTime;
         h = MathMod(h, 1);
@@ -105,7 +121,7 @@ public class ColorImageDisplay : MonoBehaviour
 
         v += _vSpeed * Time.deltaTime;
         v = Mathf.Clamp(v, 0, 1);
-        _image.color = Color.HSVToRGB(h, s, v);
+        _backgroundImage.color = Color.HSVToRGB(h, s, v);
     }
 
 }
