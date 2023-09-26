@@ -65,7 +65,6 @@ public class ColorImageDisplay : MonoBehaviour
 
     void SetSpeeds(Vector2 direction)
     {
-        Debug.Log($"{_horizontalColorComponent}, {_verticalColorComponent}");
         float hSpeed = 0;
         float sSpeed = 0;
         float vSpeed = 0;
