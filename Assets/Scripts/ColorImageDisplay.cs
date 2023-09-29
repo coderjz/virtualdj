@@ -16,13 +16,20 @@ public class ColorImageDisplay : MonoBehaviour
     private Transform _outerCircle;
 
     [SerializeField]
-    private int _mouseTapMaxMs = 300;
+    private int _mouseTapMaxMs;
 
-    // Speeds to change the HSV color
-    // TODO: Make this depend on a factor that can be serialized in Unity
-    private float _hSpeed = 0.5f;
-    private float _sSpeed = 1f;
-    private float _vSpeed = 1f;
+    // Multiplicative factors to change the HSV color
+    [SerializeField]
+    private float _hSpeedFactor;
+    [SerializeField]
+    private float _sSpeedFactor;
+    [SerializeField]
+    private float _vSpeedFactor;
+
+    // Current computed speed of changing the HSV color
+    private float _hSpeed = 0;
+    private float _sSpeed = 0;
+    private float _vSpeed = 0;
 
     private Vector2 _startDrag;
     private Vector2 _currentDrag;
@@ -46,6 +53,15 @@ public class ColorImageDisplay : MonoBehaviour
 
     private ColorComponent _horizontalColorComponent = ColorComponent.Hue;
     private ColorComponent _verticalColorComponent = ColorComponent.Saturation;
+
+    private enum FlashColor
+    {
+        White,
+        Black,
+        Inverse
+    }
+
+    private FlashColor _flashColor = FlashColor.White;
     
     void Start()
     {
@@ -109,9 +125,9 @@ public class ColorImageDisplay : MonoBehaviour
 
     void SetSpeeds(float hSpeed, float sSpeed, float vSpeed)
     {
-        this._hSpeed = hSpeed;
-        this._sSpeed = sSpeed;
-        this._vSpeed = vSpeed;
+        this._hSpeed = hSpeed * _hSpeedFactor;
+        this._sSpeed = sSpeed * _vSpeedFactor;
+        this._vSpeed = vSpeed * _vSpeedFactor;
     }
 
     void Update()
@@ -236,8 +252,26 @@ public class ColorImageDisplay : MonoBehaviour
     {
         _isFlashing = true;
         Color previousBackgroundColor = _backgroundImage.color;
-        _backgroundImage.color = new Color(1, 1, 1);
+        _backgroundImage.color = GetFlashColor(_backgroundImage.color);
         StartCoroutine("EndFlash", previousBackgroundColor);
+    }
+
+    private Color GetFlashColor(Color color)
+    {
+        return _flashColor switch
+        {
+            FlashColor.White => new Color(1, 1, 1),
+            FlashColor.Black => new Color(0, 0, 0),
+            FlashColor.Inverse => ComputeInverseColor(color),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    private Color ComputeInverseColor(Color color)
+    {
+        Color.RGBToHSV(color, out float h, out float s, out float v);
+        h = (h + 0.5f) % 1;
+        return Color.HSVToRGB(h, s, v);
     }
 
     private IEnumerator EndFlash(Color previousBackgroundColor)
@@ -249,23 +283,38 @@ public class ColorImageDisplay : MonoBehaviour
 
     public void HorizontalAxisValueChanged(int value)
     {
-        _horizontalColorComponent = GetAxisColorComponent(value);
+        //_horizontalColorComponent = GetAxisColorComponent(value);
+        _horizontalColorComponent = GetEnumFromIntWithAssert<ColorComponent>(value);
     }
 
     public void VerticalAxisValueChanged(int value)
     {
-        _verticalColorComponent = GetAxisColorComponent(value);
+        _verticalColorComponent = GetEnumFromIntWithAssert<ColorComponent>(value);
+    }
+
+    public void FlashColorValueChanged(int value)
+    {
+        _flashColor = GetEnumFromIntWithAssert<FlashColor>(value);
+    }
+
+    private T GetEnumFromIntWithAssert<T>(int value) where T : Enum
+    {
+        int numValues = Enum.GetValues(typeof(T)).Length;
+        Debug.Assert(value >= 0 && value < numValues, $"Invalid value, should be between 0 and {numValues - 1} inclusive [value={value}]");
+        return (T)Enum.ToObject(typeof(T), value);
+    }
+
+    /*
+    private ColorComponent GetAxisColorComponent(int value)
+    {
+        Debug.Assert(value >= 0 && value <= ColorComponent.Count, $"Invalid value, should be between 0 and 2 inclusive [value={value}]");
+        return (ColorComponent)value;
     }
 
     private ColorComponent GetAxisColorComponent(int value)
     {
         Debug.Assert(value >= 0 && value <= 2, $"Invalid value, should be between 0 and 2 inclusive [value={value}]");
-        return value switch
-        {
-            0 => ColorComponent.Hue,
-            1 => ColorComponent.Saturation,
-            2 => ColorComponent.Brightness,
-            _ => throw new NotImplementedException(),
-        };
+        return (ColorComponent)value;
     }
+    */
 }
