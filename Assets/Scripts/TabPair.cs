@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 [Serializable]
 public class TabPair 
@@ -11,4 +12,5 @@ public class TabPair
     [SerializeField]
     private CanvasGroup _tabContent;
     public CanvasGroup TabContent => _tabContent;
+    public TMP_Text ButtonText { get; set; }
 }

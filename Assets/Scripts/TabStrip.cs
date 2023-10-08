@@ -1,4 +1,5 @@
 ﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -13,6 +14,10 @@ public class TabStrip : MonoBehaviour
     [SerializeField]
     private Sprite _tabIconDefault;
     [SerializeField]
+    private Color _tabColorPicked;
+    [SerializeField]
+    private Color _tabColorDefault;
+    [SerializeField]
     private Button _defaultTab;
 
     protected int CurrentTabIndex { get; set; }
@@ -24,6 +29,7 @@ public class TabStrip : MonoBehaviour
             // Avoid bug with variable used in closure below being updated by loop
             int index = i;
             _tabCollection[index].TabButton.onClick.AddListener(new UnityAction(() => PickTab(index)));
+            _tabCollection[index].ButtonText = _tabCollection[index].TabButton.GetComponentInChildren<TMP_Text>();
         }
 
         EnableDefaultTab();
@@ -64,6 +70,7 @@ public class TabStrip : MonoBehaviour
         affectedItem.TabContent.blocksRaycasts = picked;
         affectedItem.TabContent.alpha = picked ? 1 : 0;
         affectedItem.TabButton.image.sprite = picked ? _tabIconPicked : _tabIconDefault;
+        affectedItem.ButtonText.color = picked ? _tabColorPicked : _tabColorDefault;
     }
 
     private int? FindTabIndex(Button tabButton)
