@@ -41,6 +41,7 @@ public class ColorImageDisplay : MonoBehaviour
     private float _joystickMaxMagnitude;
     private bool _wasMousePressed;
     private bool _isFlashing;
+    private bool _canFlash = true;
 
     private System.Diagnostics.Stopwatch _mouseDownWatch = new System.Diagnostics.Stopwatch();
 
@@ -248,8 +249,18 @@ public class ColorImageDisplay : MonoBehaviour
         _backgroundImage.color = Color.HSVToRGB(h, s, v);
     }
 
+    public void UpdateCanFlash(bool canFlash)
+    {
+        _canFlash = canFlash;
+    }
+
     private void FlashBackground()
     {
+        if(!_canFlash)
+        {
+            return;
+        }
+
         _isFlashing = true;
         Color previousBackgroundColor = _backgroundImage.color;
         _backgroundImage.color = GetFlashColor(_backgroundImage.color);
@@ -283,7 +294,6 @@ public class ColorImageDisplay : MonoBehaviour
 
     public void HorizontalAxisValueChanged(int value)
     {
-        //_horizontalColorComponent = GetAxisColorComponent(value);
         _horizontalColorComponent = GetEnumFromIntWithAssert<ColorComponent>(value);
     }
 
@@ -303,18 +313,4 @@ public class ColorImageDisplay : MonoBehaviour
         Debug.Assert(value >= 0 && value < numValues, $"Invalid value, should be between 0 and {numValues - 1} inclusive [value={value}]");
         return (T)Enum.ToObject(typeof(T), value);
     }
-
-    /*
-    private ColorComponent GetAxisColorComponent(int value)
-    {
-        Debug.Assert(value >= 0 && value <= ColorComponent.Count, $"Invalid value, should be between 0 and 2 inclusive [value={value}]");
-        return (ColorComponent)value;
-    }
-
-    private ColorComponent GetAxisColorComponent(int value)
-    {
-        Debug.Assert(value >= 0 && value <= 2, $"Invalid value, should be between 0 and 2 inclusive [value={value}]");
-        return (ColorComponent)value;
-    }
-    */
 }
